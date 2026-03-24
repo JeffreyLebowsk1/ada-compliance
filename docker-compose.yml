@@ -11,8 +11,8 @@ services:
       # SECRET_KEY must be set explicitly in production.
       # Generate one with: python -c "import secrets; print(secrets.token_hex(32))"
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY environment variable is required}
-      # Optional: provide your OpenAI key to enable AI vision audits
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Optional: provide your Perplexity key to enable AI vision audits
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
       # Number of gunicorn workers (override at runtime if needed)
       - WEB_CONCURRENCY=${WEB_CONCURRENCY:-4}
     restart: unless-stopped

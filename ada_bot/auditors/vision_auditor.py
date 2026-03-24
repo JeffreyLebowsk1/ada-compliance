@@ -2,7 +2,7 @@
 Layer 6 — AI Vision auditor.
 
 Captures full-page screenshots of each URL using Playwright and sends
-them to GPT-4o (vision) for a holistic visual accessibility inspection.
+them to Perplexity (vision) for a holistic visual accessibility inspection.
 
 The prompt instructs the model to look for:
   - Text that appears to have low contrast (not detectable from CSS alone)
@@ -13,7 +13,7 @@ The prompt instructs the model to look for:
   - Any visual element that looks like it may not meet ADA/WCAG guidelines
 
 Requirements:
-  - OPENAI_API_KEY environment variable must be set
+  - PERPLEXITY_API_KEY environment variable must be set
   - playwright + chromium must be installed
 
 Usage:
@@ -79,7 +79,7 @@ Respond ONLY with the JSON array, no other text.
 
 
 class VisionAuditor(BaseAuditor):
-    """GPT-4o vision-based accessibility auditor."""
+    """Perplexity vision-based accessibility auditor."""
 
     LAYER_NAME = "ai_vision"
 
@@ -87,13 +87,13 @@ class VisionAuditor(BaseAuditor):
         self,
         *,
         screenshot_dir: Optional[str] = None,
-        openai_api_key: Optional[str] = None,
-        model: str = "gpt-4o",
+        perplexity_api_key: Optional[str] = None,
+        model: str = "llama-3.2-90b-vision-instruct",
         timeout_ms: int = 30_000,
         headless: bool = True,
     ) -> None:
         self.screenshot_dir = screenshot_dir or tempfile.mkdtemp(prefix="ada_vision_")
-        self.openai_api_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
+        self.perplexity_api_key = perplexity_api_key or os.environ.get("PERPLEXITY_API_KEY", "")
         self.model = model
         self.timeout_ms = timeout_ms
         self.headless = headless
@@ -174,9 +174,9 @@ class VisionAuditor(BaseAuditor):
     def _run_vision(
         self, url: str, screenshot_path: str, result: PageAuditResult
     ) -> list[dict]:
-        if not self.openai_api_key:
+        if not self.perplexity_api_key:
             result.error = (
-                "OPENAI_API_KEY is not set. Vision audit requires an OpenAI API key."
+                "PERPLEXITY_API_KEY is not set. Vision audit requires a Perplexity API key."
             )
             return []
 
@@ -190,7 +190,10 @@ class VisionAuditor(BaseAuditor):
             with open(screenshot_path, "rb") as f:
                 img_b64 = base64.b64encode(f.read()).decode("utf-8")
 
-            client = OpenAI(api_key=self.openai_api_key)
+            client = OpenAI(
+                api_key=self.perplexity_api_key,
+                base_url="https://api.perplexity.ai",
+            )
             response = client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -201,8 +204,8 @@ class VisionAuditor(BaseAuditor):
                             {
                                 "type": "image_url",
                                 "image_url": {
+                                    # Perplexity does not support the "detail" parameter
                                     "url": f"data:image/png;base64,{img_b64}",
-                                    "detail": "high",
                                 },
                             },
                         ],

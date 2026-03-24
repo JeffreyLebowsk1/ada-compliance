@@ -10,8 +10,8 @@ Orchestrates the multi-pass audit:
   Pass 5 — Layer 5: ARIA / landmark audit (AriaAuditor).
   Pass 6 — Layer 1: axe-core automated audit in Playwright (AxeAuditor).
              (Runs after static passes so static issues inform browser setup.)
-  Pass 7 — Layer 6: AI Vision audit via GPT-4o (VisionAuditor).
-             (Optional, requires OPENAI_API_KEY.)
+  Pass 7 — Layer 6: AI Vision audit via Perplexity (VisionAuditor).
+             (Optional, requires PERPLEXITY_API_KEY.)
   Pass 8 — Final confirmation pass: re-audits pages flagged as having
              critical issues with HtmlAuditor + AriaAuditor to confirm
              findings haven't changed.
@@ -58,7 +58,7 @@ class AuditConfig:
     run_keyboard_audit: bool = True
     run_aria_audit: bool = True
     run_axe_audit: bool = True
-    run_vision_audit: bool = False  # requires OPENAI_API_KEY
+    run_vision_audit: bool = False  # requires PERPLEXITY_API_KEY
 
     # axe / Playwright settings
     axe_timeout_ms: int = 30_000
@@ -66,7 +66,7 @@ class AuditConfig:
     axe_script_path: Optional[str] = None
 
     # Vision settings
-    openai_api_key: Optional[str] = None
+    perplexity_api_key: Optional[str] = None
     vision_screenshot_dir: str = "ada_reports/screenshots"
 
     # Output
@@ -181,11 +181,11 @@ class AuditEngine:
         # Pass 7 — AI Vision
         # ------------------------------------------------------------------ #
         if cfg.run_vision_audit:
-            self._log("Pass 7/8 — AI Vision audit (GPT-4o)…")
-            api_key = cfg.openai_api_key or os.environ.get("OPENAI_API_KEY", "")
+            self._log("Pass 7/8 — AI Vision audit (Perplexity)…")
+            api_key = cfg.perplexity_api_key or os.environ.get("PERPLEXITY_API_KEY", "")
             vision_auditor = VisionAuditor(
                 screenshot_dir=cfg.vision_screenshot_dir,
-                openai_api_key=api_key,
+                perplexity_api_key=api_key,
                 headless=cfg.headless,
             )
             for url, _, title in html_pages:
