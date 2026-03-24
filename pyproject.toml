@@ -33,9 +33,14 @@ dev = [
     "pytest-cov>=5.0.0",
     "responses>=0.25.0",
 ]
+web = [
+    "flask>=3.0.0",
+    "gunicorn>=22.0.0",
+]
 
 [project.scripts]
-ada-bot = "ada_bot.cli:main"
+ada-bot     = "ada_bot.cli:main"
+ada-bot-web = "ada_bot.webapp:run_dev_server"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -44,3 +49,6 @@ include = ["ada_bot*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "integration: marks tests as integration tests that make real network requests (deselect with '-m not integration')",
+]

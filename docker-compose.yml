@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  ada-web:
+    build: .
+    image: ada-compliance-bot:latest
+    container_name: ada-compliance-web
+    ports:
+      - "8080:8080"
+    environment:
+      # SECRET_KEY must be set explicitly in production.
+      # Generate one with: python -c "import secrets; print(secrets.token_hex(32))"
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY environment variable is required}
+      # Optional: provide your OpenAI key to enable AI vision audits
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Number of gunicorn workers (override at runtime if needed)
+      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-4}
+    restart: unless-stopped
+    # Chromium needs a larger /dev/shm to avoid crashes
+    shm_size: "256mb"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
