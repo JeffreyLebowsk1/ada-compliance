@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADA Compliance Bot — Web Auditor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --color-danger:    #c0392b;
+      --color-warning:   #e67e22;
+      --color-info:      #2980b9;
+      --color-success:   #27ae60;
+      --bg:              #f4f6f8;
+      --card-bg:         #fff;
+      --border:          #d8dde6;
+      --text:            #1a1a2e;
+      --text-muted:      #555;
+      --accent:          #2c5f9e;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); }
+    a:focus, button:focus, input:focus, select:focus, textarea:focus {
+      outline: 3px solid #f0a500;
+      outline-offset: 2px;
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 1rem;
+      background: #000;
+      color: #fff;
+      padding: .5rem 1rem;
+      z-index: 9999;
+      border-radius: 0 0 4px 4px;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+    }
+    .header-logo { font-size: 2.5rem; margin-bottom: .5rem; }
+    header h1 {
+      margin: 0 0 .5rem;
+      font-size: 1.9rem;
+      letter-spacing: -.5px;
+    }
+    header p { margin: 0; opacity: .8; font-size: 1rem; }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: .4rem;
+      margin-top: 1rem;
+    }
+    .badge {
+      background: rgba(255,255,255,.15);
+      border-radius: 999px;
+      padding: .2rem .7rem;
+      font-size: .78rem;
+      letter-spacing: .3px;
+    }
+
+    /* Main layout */
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1rem 3rem;
+    }
+
+    /* Error banner */
+    .error-banner {
+      background: #fdf2f2;
+      border: 1px solid #f5c6cb;
+      border-left: 4px solid var(--color-danger);
+      border-radius: 6px;
+      padding: .9rem 1.1rem;
+      margin-bottom: 1.5rem;
+      color: var(--color-danger);
+      font-weight: 500;
+    }
+
+    /* Audit form card */
+    .audit-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .audit-card h2 {
+      margin: 0 0 1.5rem;
+      font-size: 1.2rem;
+      color: var(--text);
+    }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: .4rem;
+      font-size: .9rem;
+    }
+    .form-group .hint {
+      display: block;
+      color: var(--text-muted);
+      font-size: .8rem;
+      margin-top: .2rem;
+    }
+    .url-input-wrap { position: relative; }
+    .url-input-wrap .url-icon {
+      position: absolute;
+      left: .85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.1rem;
+      pointer-events: none;
+    }
+    input[type="text"], input[type="url"], input[type="number"], select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .65rem .75rem;
+      font-size: .95rem;
+      color: var(--text);
+      background: #fff;
+      transition: border-color .15s;
+    }
+    .url-input-wrap input {
+      padding-left: 2.4rem;
+      font-size: 1rem;
+    }
+    input[type="text"]:focus, input[type="url"]:focus,
+    input[type="number"]:focus, select:focus {
+      border-color: var(--accent);
+    }
+    input[type="text"]::placeholder, input[type="url"]::placeholder {
+      color: #aaa;
+    }
+
+    /* Options grid */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: .5rem;
+    }
+    @media (max-width: 480px) { .options-grid { grid-template-columns: 1fr; } }
+
+    /* Checkbox group */
+    .check-group { margin: 1.25rem 0 0; }
+    .check-group legend {
+      font-weight: 600;
+      font-size: .9rem;
+      margin-bottom: .6rem;
+      padding: 0;
+    }
+    .check-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .4rem .75rem;
+    }
+    @media (max-width: 480px) { .check-grid { grid-template-columns: 1fr; } }
+    .check-item { display: flex; align-items: center; gap: .4rem; cursor: pointer; }
+    .check-item input[type="checkbox"] { width: 1rem; height: 1rem; cursor: pointer; }
+    .check-item span { font-size: .88rem; color: var(--text-muted); }
+
+    /* Submit button */
+    .btn-audit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      width: 100%;
+      padding: .85rem 1.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #2c5f9e 0%, #1a3d6e 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1.75rem;
+      transition: opacity .15s, transform .1s;
+      letter-spacing: .3px;
+    }
+    .btn-audit:hover { opacity: .9; }
+    .btn-audit:active { transform: scale(.99); }
+
+    /* Features section */
+    .features {
+      margin-top: 2.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem;
+      text-align: center;
+    }
+    .feature-card .icon { font-size: 1.6rem; }
+    .feature-card strong { display: block; margin: .4rem 0 .2rem; font-size: .9rem; }
+    .feature-card p { margin: 0; font-size: .8rem; color: var(--text-muted); }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: .8rem;
+      padding: 1.5rem 1rem 2rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <header>
+    <div class="header-logo" aria-hidden="true">♿</div>
+    <h1>ADA Compliance Bot</h1>
+    <p>Multi-pass WCAG&nbsp;2.2 accessibility auditing for any website</p>
+    <div class="badge-row" aria-label="Audit layers">
+      <span class="badge">HTML Structure</span>
+      <span class="badge">Color Contrast</span>
+      <span class="badge">Keyboard Nav</span>
+      <span class="badge">ARIA / Landmarks</span>
+      <span class="badge">axe-core</span>
+    </div>
+  </header>
+
+  <main id="main-content">
+
+    {% if error %}
+    <div class="error-banner" role="alert">
+      <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="audit-card">
+      <h2>Audit a website</h2>
+      <form action="/audit" method="POST" novalidate>
+
+        <div class="form-group">
+          <label for="url">Website URL <span aria-hidden="true">*</span></label>
+          <div class="url-input-wrap">
+            <span class="url-icon" aria-hidden="true">🌐</span>
+            <input
+              type="url"
+              id="url"
+              name="url"
+              placeholder="https://example.com"
+              required
+              autocomplete="url"
+              spellcheck="false"
+              aria-describedby="url-hint"
+            >
+          </div>
+          <span id="url-hint" class="hint">Enter the full URL of the site you want to audit.</span>
+        </div>
+
+        <div class="options-grid">
+          <div class="form-group">
+            <label for="max_pages">Max pages to crawl</label>
+            <input
+              type="number"
+              id="max_pages"
+              name="max_pages"
+              value="25"
+              min="1"
+              max="500"
+              aria-describedby="max-pages-hint"
+            >
+            <span id="max-pages-hint" class="hint">1–500. Keep ≤50 for faster results.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="max_depth">Crawl depth</label>
+            <input
+              type="number"
+              id="max_depth"
+              name="max_depth"
+              value="3"
+              min="1"
+              max="15"
+              aria-describedby="max-depth-hint"
+            >
+            <span id="max-depth-hint" class="hint">How many link-levels deep to follow.</span>
+          </div>
+        </div>
+
+        <fieldset class="check-group">
+          <legend>Audit layers to run</legend>
+          <div class="check-grid">
+            <label class="check-item">
+              <input type="checkbox" name="run_html" value="on" checked>
+              <span>HTML Structure</span>
+            </label>
+            <label class="check-item">
+              <input type="checkbox" name="run_color" value="on" checked>
+              <span>Color Contrast</span>
+            </label>
+            <label class="check-item">
+              <input type="checkbox" name="run_keyboard" value="on" checked>
+              <span>Keyboard Navigation</span>
+            </label>
+            <label class="check-item">
+              <input type="checkbox" name="run_aria" value="on" checked>
+              <span>ARIA / Landmarks</span>
+            </label>
+            <label class="check-item">
+              <input type="checkbox" name="run_axe" value="on">
+              <span>axe-core (browser) — requires Chromium</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="btn-audit">
+          <span aria-hidden="true">🔍</span>
+          Start Accessibility Audit
+        </button>
+
+      </form>
+    </div>
+
+    <section class="features" aria-label="What gets checked">
+      <div class="feature-card">
+        <div class="icon" aria-hidden="true">📄</div>
+        <strong>HTML Structure</strong>
+        <p>Titles, language, headings, images, links, forms, tables</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" aria-hidden="true">🎨</div>
+        <strong>Color Contrast</strong>
+        <p>WCAG AA (4.5:1) and AAA (7:1) contrast ratio checks</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" aria-hidden="true">⌨️</div>
+        <strong>Keyboard Nav</strong>
+        <p>Tab order, focus indicators, click-only elements</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" aria-hidden="true">🏷️</div>
+        <strong>ARIA / Roles</strong>
+        <p>Landmarks, valid ARIA roles and required attributes</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>ADA Compliance Bot — WCAG 2.2 | Open source on GitHub</p>
+  </footer>
+</body>
+</html>

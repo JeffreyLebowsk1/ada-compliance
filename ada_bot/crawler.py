@@ -219,7 +219,10 @@ class Crawler:
         try:
             rp.read()
         except Exception:
-            pass
+            # If robots.txt cannot be fetched, be permissive (allow all).
+            # Without this, can_fetch() returns False for every URL because
+            # last_checked is never set on a failed read.
+            rp.allow_all = True
         return rp
 
     @staticmethod
