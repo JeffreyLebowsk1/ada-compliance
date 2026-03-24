@@ -18,7 +18,7 @@ with specific remediation guidance for every issue found.
 | **3 — Color Contrast** | Custom WCAG math | WCAG 1.4.3 (AA) and 1.4.6 (AAA) contrast ratios from inline styles |
 | **4 — Keyboard Navigation** | BeautifulSoup | tabindex ordering, outline removal, click-only divs, accesskey conflicts |
 | **5 — ARIA & Landmarks** | BeautifulSoup | Valid roles, required attributes, landmark regions, aria-hidden on focusable, aria-labelledby resolution |
-| **6 — AI Vision** | GPT-4o (optional) | Visual contrast, images of text, missing focus indicators, color-only information |
+| **6 — AI Vision** | Perplexity (optional) | Visual contrast, images of text, missing focus indicators, color-only information |
 | **7 — Confirmation Pass** | Layers 2 + 5 | Re-audits all pages with critical issues to confirm findings |
 
 **Produces:**
@@ -32,7 +32,7 @@ with specific remediation guidance for every issue found.
 
 - Python 3.10+
 - For axe-core/vision audits: Chromium (installed via Playwright)
-- For AI vision: OpenAI API key with GPT-4o access
+- For AI vision: Perplexity API key with vision model access
 
 ---
 
@@ -62,8 +62,8 @@ playwright install chromium
 # Basic audit — crawls up to 100 pages, runs all static layers + axe-core
 ada-bot audit https://example.com
 
-# With AI vision (requires OPENAI_API_KEY)
-OPENAI_API_KEY=sk-... ada-bot audit https://example.com --vision
+# With AI vision (requires PERPLEXITY_API_KEY)
+PERPLEXITY_API_KEY=pplx-... ada-bot audit https://example.com --vision
 
 # Fast static-only audit (no browser needed)
 ada-bot audit https://example.com --no-axe
@@ -100,11 +100,11 @@ Options:
   --no-keyboard           Skip keyboard navigation audit (Layer 4)
   --no-aria               Skip ARIA/landmark audit (Layer 5)
   --no-axe                Skip axe-core browser audit (Layer 1)
-  --vision                Enable AI vision audit — Layer 6 (requires OPENAI_API_KEY)
+  --vision                Enable AI vision audit — Layer 6 (requires PERPLEXITY_API_KEY)
   --no-robots             Ignore robots.txt
   --no-headless           Run browser visibly (for debugging)
   --axe-script PATH       Path to local axe.min.js (uses CDN otherwise)
-  --openai-key TEXT       OpenAI API key (can also be set via OPENAI_API_KEY env var)
+  --perplexity-key TEXT   Perplexity API key (can also be set via PERPLEXITY_API_KEY env var)
   --include TEXT          URL regex to include (repeatable)
   --exclude TEXT          URL regex to exclude (repeatable)
   --screenshot-dir PATH   Directory for vision screenshots
@@ -123,7 +123,7 @@ Pass 3  Contrast     WCAG color contrast calculation
 Pass 4  Keyboard     Keyboard reachability and focus checks
 Pass 5  ARIA         ARIA roles, landmarks, attributes
 Pass 6  axe-core     100+ automated rules in Chromium via Playwright
-Pass 7  AI Vision    GPT-4o screenshot analysis (optional)
+Pass 7  AI Vision    Perplexity screenshot analysis (optional)
 Pass 8  Confirm      Re-audit pages with critical issues to confirm
 ```
 

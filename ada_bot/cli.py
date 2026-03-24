@@ -67,18 +67,18 @@ def main():
 @click.option("--no-keyboard",is_flag=True, default=False, help="Skip keyboard navigation audit.")
 @click.option("--no-aria",    is_flag=True, default=False, help="Skip ARIA/landmark audit.")
 @click.option("--no-axe",     is_flag=True, default=False, help="Skip axe-core browser audit.")
-@click.option("--vision",     is_flag=True, default=False, help="Enable AI vision audit (requires OPENAI_API_KEY).")
+@click.option("--vision",     is_flag=True, default=False, help="Enable AI vision audit (requires PERPLEXITY_API_KEY).")
 @click.option("--no-robots",  is_flag=True, default=False, help="Ignore robots.txt.")
 @click.option("--no-headless",is_flag=True, default=False, help="Run browser in visible mode (for debugging).")
 @click.option("--axe-script", default=None, help="Path to local axe.min.js (uses CDN if not provided).")
-@click.option("--openai-key", default=None, envvar="OPENAI_API_KEY", help="OpenAI API key for vision audit.")
+@click.option("--perplexity-key", default=None, envvar="PERPLEXITY_API_KEY", help="Perplexity API key for vision audit.")
 @click.option("--include",    multiple=True, help="URL regex pattern to include (can specify multiple).")
 @click.option("--exclude",    multiple=True, help="URL regex pattern to exclude (can specify multiple).")
 @click.option("--screenshot-dir", default=None, help="Directory for vision screenshots.")
 def audit_cmd(
     url, max_pages, max_depth, timeout, output,
     no_html, no_color, no_keyboard, no_aria, no_axe, vision,
-    no_robots, no_headless, axe_script, openai_key,
+    no_robots, no_headless, axe_script, perplexity_key,
     include, exclude, screenshot_dir,
 ):
     """Audit URL for ADA/WCAG compliance.
@@ -108,7 +108,7 @@ def audit_cmd(
         run_vision_audit=vision,
         headless=not no_headless,
         axe_script_path=axe_script,
-        openai_api_key=openai_key,
+        perplexity_api_key=perplexity_key,
         vision_screenshot_dir=screenshot_dir or os.path.join(output, "screenshots"),
         output_dir=output,
         on_progress=_colour_log,
