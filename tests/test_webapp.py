@@ -222,7 +222,12 @@ class TestStatusPage:
     def test_shows_job_url(self, client):
         _make_fake_job("job2", url="https://mysite.example.com")
         html = client.get("/audit/job2").data.decode()
-        assert "mysite.example.com" in html
+        # Verify the URL is rendered verbatim in the header-url span
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+        url_spans = soup.find_all("span", {"class": "header-url"})
+        rendered_urls = [s.get_text().strip() for s in url_spans]
+        assert "https://mysite.example.com" == rendered_urls[0]
 
     def test_has_progress_log_element(self, client):
         _make_fake_job("job3")

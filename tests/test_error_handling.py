@@ -344,9 +344,10 @@ class TestCrawlerNetworkErrors:
         crawler = Crawler("https://example.com", max_pages=50, max_depth=1, respect_robots=False)
         pages = crawler.crawl()
         urls = [p.url for p in pages]
-        assert "https://example.com" in urls
-        assert "https://example.com/level1" in urls
-        assert "https://example.com/level2" not in urls
+        # Use exact membership checks (list `in` is equality-based, not substring)
+        assert any(u == "https://example.com" for u in urls)
+        assert any(u == "https://example.com/level1" for u in urls)
+        assert all(u != "https://example.com/level2" for u in urls)
 
     @resp_lib.activate
     def test_include_pattern_filters_pages(self):

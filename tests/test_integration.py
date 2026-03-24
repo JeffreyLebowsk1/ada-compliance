@@ -65,9 +65,10 @@ class TestCrawlerIntegration:
         assert len(pages) >= 1
 
     def test_start_page_is_included(self):
+        from urllib.parse import urlparse
         crawler = Crawler(TARGET, max_pages=1, max_depth=0, respect_robots=False)
         pages = crawler.crawl()
-        assert pages[0].url.startswith("https://example.com")
+        assert urlparse(pages[0].url).netloc == "example.com"
 
     def test_page_has_html_content(self):
         crawler = Crawler(TARGET, max_pages=1, max_depth=0, respect_robots=False)
@@ -96,11 +97,11 @@ class TestCrawlerIntegration:
         assert pages[0].error is None
 
     def test_external_links_not_followed(self):
+        from urllib.parse import urlparse
         crawler = Crawler(TARGET, max_pages=10, max_depth=2, respect_robots=False)
         pages = crawler.crawl()
         for page in pages:
-            assert page.url.startswith("https://example.com") or \
-                   page.url.startswith("http://example.com")
+            assert urlparse(page.url).netloc == "example.com"
 
 
 # ---------------------------------------------------------------------------
