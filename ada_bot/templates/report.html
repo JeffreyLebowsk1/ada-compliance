@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADA Compliance Audit Report — {{ data.target_url }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --color-danger:    #c0392b;
+      --color-warning:   #e67e22;
+      --color-info:      #2980b9;
+      --color-secondary: #7f8c8d;
+      --color-success:   #27ae60;
+      --bg: #f4f6f8;
+      --card-bg: #fff;
+      --border: #d8dde6;
+      --text: #1a1a2e;
+      --text-muted: #555;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    a { color: #2c5f9e; }
+    a:focus { outline: 3px solid #f0a500; outline-offset: 2px; }
+
+    /* ---- Skip link ---- */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 1rem;
+      background: #000;
+      color: #fff;
+      padding: .5rem 1rem;
+      z-index: 9999;
+      border-radius: 0 0 4px 4px;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ---- Header ---- */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      padding: 2rem;
+    }
+    header h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+    header p  { margin: 0; opacity: .75; font-size: .9rem; }
+
+    /* ---- Main layout ---- */
+    main { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+    /* ---- Score card ---- */
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .score-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .score-card .value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .score-card .label { font-size: .8rem; color: var(--text-muted); margin-top: .35rem; }
+    .score-card.score .value {
+      color: {% if data.compliance_score >= 90 %}var(--color-success)
+             {% elif data.compliance_score >= 70 %}var(--color-warning)
+             {% else %}var(--color-danger){% endif %};
+    }
+
+    /* ---- Section headings ---- */
+    .section-heading {
+      font-size: 1.15rem;
+      font-weight: 600;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: .5rem;
+      margin: 2rem 0 1rem;
+    }
+
+    /* ---- Severity badges ---- */
+    .badge {
+      display: inline-block;
+      padding: .2em .65em;
+      border-radius: 12px;
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .badge-danger    { background: #fde8e8; color: var(--color-danger); }
+    .badge-warning   { background: #fef3e2; color: var(--color-warning); }
+    .badge-info      { background: #e8f4fd; color: var(--color-info); }
+    .badge-secondary { background: #f0f0f0; color: var(--color-secondary); }
+
+    /* ---- Issues table ---- */
+    .issues-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .875rem;
+    }
+    .issues-table th {
+      background: #2c3e50;
+      color: #fff;
+      padding: .6rem .75rem;
+      text-align: left;
+      font-weight: 600;
+    }
+    .issues-table td {
+      padding: .6rem .75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .issues-table tr:nth-child(even) td { background: #f9fafb; }
+    .issues-table tr:hover td { background: #edf2f7; }
+    .code { font-family: monospace; font-size: .8rem; background: #f0f0f0; padding: 2px 4px; border-radius: 3px; word-break: break-all; }
+
+    /* ---- Page accordion ---- */
+    details { margin-bottom: .75rem; }
+    summary {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .75rem 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 500;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "▸"; margin-left: auto; }
+    details[open] summary::after { content: "▾"; }
+    summary:focus { outline: 3px solid #f0a500; outline-offset: 2px; }
+    .page-detail { border: 1px solid var(--border); border-top: none; padding: 1rem; border-radius: 0 0 6px 6px; overflow-x: auto; }
+
+    /* ---- Fix suggestion block ---- */
+    .fix-block {
+      background: #edfbf0;
+      border-left: 3px solid var(--color-success);
+      padding: .5rem .75rem;
+      margin-top: .5rem;
+      font-size: .8rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* ---- Charts ---- */
+    .bar-chart { display: flex; flex-direction: column; gap: .35rem; margin-bottom: 1rem; }
+    .bar-row { display: flex; align-items: center; gap: .5rem; font-size: .8rem; }
+    .bar-row .bar-label { min-width: 80px; text-align: right; color: var(--text-muted); }
+    .bar-outer { flex: 1; background: #e8e8e8; border-radius: 4px; height: 18px; overflow: hidden; }
+    .bar-inner { height: 100%; border-radius: 4px; transition: width .3s; }
+    .bar-row .bar-count { min-width: 30px; font-weight: 600; }
+    .bar-danger  .bar-inner { background: var(--color-danger); }
+    .bar-warning .bar-inner { background: var(--color-warning); }
+    .bar-info    .bar-inner { background: var(--color-info); }
+    .bar-secondary .bar-inner { background: var(--color-secondary); }
+
+    /* ---- Footer ---- */
+    footer { text-align: center; padding: 2rem; font-size: .8rem; color: var(--text-muted); }
+
+    @media print {
+      details { display: block; }
+      summary::after { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <header role="banner">
+    <h1>ADA Compliance Audit Report</h1>
+    <p>
+      Target: <strong>{{ data.target_url }}</strong> &nbsp;|&nbsp;
+      Generated: {{ generated_at }}
+    </p>
+  </header>
+
+  <main id="main-content" role="main">
+
+    <!-- ======================================================= SUMMARY -->
+    <h2 class="section-heading">Executive Summary</h2>
+    <div class="score-grid" role="list">
+
+      <div class="score-card score" role="listitem">
+        <div class="value">{{ data.compliance_score }}</div>
+        <div class="label">Compliance Score / 100</div>
+      </div>
+
+      <div class="score-card" role="listitem">
+        <div class="value">{{ data.total_pages }}</div>
+        <div class="label">Pages Audited</div>
+      </div>
+
+      <div class="score-card" role="listitem">
+        <div class="value" style="color:var(--color-danger)">{{ data.by_severity.get('critical', 0) }}</div>
+        <div class="label">Critical Issues</div>
+      </div>
+
+      <div class="score-card" role="listitem">
+        <div class="value" style="color:var(--color-warning)">{{ data.by_severity.get('serious', 0) }}</div>
+        <div class="label">Serious Issues</div>
+      </div>
+
+      <div class="score-card" role="listitem">
+        <div class="value" style="color:var(--color-info)">{{ data.by_severity.get('moderate', 0) }}</div>
+        <div class="label">Moderate Issues</div>
+      </div>
+
+      <div class="score-card" role="listitem">
+        <div class="value">{{ data.total_issues }}</div>
+        <div class="label">Total Issues</div>
+      </div>
+
+    </div>
+
+    <!-- Severity distribution -->
+    <h2 class="section-heading">Issues by Severity</h2>
+    {% set sev_max = [data.by_severity.get('critical',0), data.by_severity.get('serious',0), data.by_severity.get('moderate',0), data.by_severity.get('minor',0)] | max %}
+    <div class="bar-chart" role="img" aria-label="Bar chart showing issue counts by severity">
+      {% for label, cls, count in [
+        ('Critical', 'danger',    data.by_severity.get('critical', 0)),
+        ('Serious',  'warning',   data.by_severity.get('serious',  0)),
+        ('Moderate', 'info',      data.by_severity.get('moderate', 0)),
+        ('Minor',    'secondary', data.by_severity.get('minor',    0)),
+      ] %}
+      <div class="bar-row bar-{{ cls }}">
+        <span class="bar-label">{{ label }}</span>
+        <div class="bar-outer">
+          <div class="bar-inner" style="width:{% if sev_max %}{{ (count / sev_max * 100)|round }}%{% else %}0%{% endif %}"></div>
+        </div>
+        <span class="bar-count">{{ count }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Audit layers -->
+    <h2 class="section-heading">Issues by Audit Layer</h2>
+    <div class="bar-chart" role="img" aria-label="Bar chart showing issue counts by audit layer">
+      {% set layer_max = data.by_layer.values() | max if data.by_layer else 1 %}
+      {% for layer, count in data.by_layer.items() | sort(attribute=1, reverse=true) %}
+      <div class="bar-row bar-info">
+        <span class="bar-label" style="min-width:140px">{{ layer | replace('_', ' ') | title }}</span>
+        <div class="bar-outer">
+          <div class="bar-inner" style="width:{{ (count / layer_max * 100)|round }}%"></div>
+        </div>
+        <span class="bar-count">{{ count }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- WCAG criteria breakdown -->
+    {% if data.by_wcag %}
+    <h2 class="section-heading">Top WCAG Violations</h2>
+    <table class="issues-table" aria-label="WCAG violations by criterion">
+      <thead>
+        <tr>
+          <th scope="col">WCAG Criterion</th>
+          <th scope="col">Issue Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for crit, count in data.by_wcag.items() | sort(attribute=1, reverse=true) %}
+        {% if loop.index <= 15 %}
+        <tr>
+          <td><a href="https://www.w3.org/WAI/WCAG22/Understanding/" rel="noopener noreferrer">{{ crit }}</a></td>
+          <td><strong>{{ count }}</strong></td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <!-- ======================================================= ISSUES -->
+    <h2 class="section-heading">All Issues ({{ data.all_issues | length }})</h2>
+
+    {% if not data.all_issues %}
+    <p style="color:var(--color-success);font-weight:600">
+      ✅ No accessibility issues were found! The site appears to be fully compliant.
+    </p>
+    {% else %}
+    <p>Issues are grouped by page. Click a page URL to expand its findings.</p>
+
+    {% set pages_with_issues = data.pages | selectattr('issues') | list %}
+    {% for page in pages_with_issues %}
+    <details>
+      <summary>
+        <span>
+          {{ page.url }}
+          {% if page.title %}<small style="color:var(--text-muted)"> — {{ page.title }}</small>{% endif %}
+        </span>
+        <span>
+          {% if page.critical_count %}
+            <span class="badge badge-danger" aria-label="{{ page.critical_count }} critical">{{ page.critical_count }} ✕</span>
+          {% endif %}
+          {% if page.serious_count %}
+            <span class="badge badge-warning">{{ page.serious_count }} !</span>
+          {% endif %}
+          <span class="badge badge-secondary">{{ page.issues | length }} total</span>
+        </span>
+      </summary>
+      <div class="page-detail">
+        <table class="issues-table" aria-label="Issues for {{ page.url }}">
+          <thead>
+            <tr>
+              <th scope="col">Severity</th>
+              <th scope="col">Rule</th>
+              <th scope="col">Description</th>
+              <th scope="col">Element</th>
+              <th scope="col">WCAG</th>
+              <th scope="col">Layer</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for issue in page.issues | sort(attribute='severity') %}
+            <tr>
+              <td>
+                <span class="badge badge-{{ issue.severity.value | severity_class }}">
+                  {{ issue.severity.value }}
+                </span>
+              </td>
+              <td><code class="code">{{ issue.rule_id }}</code></td>
+              <td>
+                {{ issue.description }}
+                {% if issue.fix_suggestion %}
+                <div class="fix-block">
+                  <strong>Fix:</strong> {{ issue.fix_suggestion }}
+                </div>
+                {% endif %}
+                {% if issue.help_url %}
+                <div style="margin-top:.3rem"><a href="{{ issue.help_url }}" rel="noopener noreferrer" target="_blank">WCAG guidance ↗</a></div>
+                {% endif %}
+              </td>
+              <td>
+                {% if issue.element_selector %}
+                  <code class="code">{{ issue.element_selector }}</code>
+                {% endif %}
+                {% if issue.element_html %}
+                  <pre style="margin:.4rem 0 0;font-size:.7rem;white-space:pre-wrap;word-break:break-all;background:#f5f5f5;padding:.3rem .5rem;border-radius:3px">{{ issue.element_html[:150] }}</pre>
+                {% endif %}
+              </td>
+              <td>{{ issue.wcag_criteria | join(', ') }}</td>
+              <td>{{ issue.audit_layer | replace('_',' ') | title }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {% endfor %}
+    {% endif %}
+
+    <!-- ======================================================= REMEDIATION GUIDE -->
+    <h2 class="section-heading">Remediation Priority Guide</h2>
+    <table class="issues-table" aria-label="Top rules to fix, sorted by frequency">
+      <thead>
+        <tr>
+          <th scope="col">Rule ID</th>
+          <th scope="col">Occurrences</th>
+          <th scope="col">Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rule, count in data.by_rule.items() | sort(attribute=1, reverse=true) %}
+        {% if loop.index <= 20 %}
+        <tr>
+          <td><code class="code">{{ rule }}</code></td>
+          <td>{{ count }}</td>
+          <td>
+            {% if count > 20 %}
+              <span class="badge badge-danger">Fix immediately</span>
+            {% elif count > 5 %}
+              <span class="badge badge-warning">High priority</span>
+            {% else %}
+              <span class="badge badge-info">Address soon</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </main>
+
+  <footer role="contentinfo">
+    <p>
+      Generated by <strong>ADA Compliance Bot</strong> &mdash;
+      Multi-pass WCAG 2.2 auditing tool.<br>
+      <a href="https://github.com/JeffreyLebowsk1/ada-compliance" rel="noopener noreferrer">
+        github.com/JeffreyLebowsk1/ada-compliance
+      </a>
+    </p>
+  </footer>
+</body>
+</html>
